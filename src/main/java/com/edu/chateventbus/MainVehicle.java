@@ -26,8 +26,14 @@ public class MainVehicle extends AbstractVerticle {
         router.route("/static/*").handler(
                 StaticHandler.create().setCachingEnabled(false));
         router.post("/chat/push").handler(BodyHandler.create());
-        router.get("/chat/push").handler(handlePushMessage());
+        router.post("/chat/push").handler(handlePushMessage());
         router.route("/chat/messages").handler(handlerSendMessages());
+        router.get("/").handler(c -> {
+            c.response()
+                    .putHeader("Location","/static/index.html")
+                    .setStatusCode(302)
+                    .end();
+        });
 
         vertx
                 .createHttpServer()
@@ -70,8 +76,11 @@ public class MainVehicle extends AbstractVerticle {
 
     private Handler<RoutingContext> handlePushMessage(){
         return context -> {
-            String msg = context.request().getParam("msg");
-            vertx.eventBus().publish("chat", msg);
+            String msg = context.getBodyAsString();
+
+            if(msg != null){
+                vertx.eventBus().publish("chat", msg);
+            }
 
             context.response()
                   .setChunked(true)
